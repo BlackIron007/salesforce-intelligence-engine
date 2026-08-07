@@ -1,0 +1,30 @@
+name: Enterprise Intelligence Pipeline
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Executes every 15 minutes
+  workflow_dispatch: # Allows you to manually trigger a run via the GitHub UI
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # Caches dependencies to make runs significantly faster
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Execute Intelligence Engine
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          OMNIROUTE_API_KEY: ${{ secrets.OMNIROUTE_API_KEY }}
+          OMNIROUTE_BASE_URL: ${{ secrets.OMNIROUTE_BASE_URL }}
+        run: python scraper.py
