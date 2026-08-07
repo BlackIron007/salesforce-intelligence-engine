@@ -1,0 +1,12 @@
+aiohttp
+asyncpg
+feedparser
+trafilatura
+httpx
+numpy
+pydantic
+sentence-transformers
+scikit-learn
+curl_cffi
+instructor
+openai
