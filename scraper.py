@@ -250,16 +250,20 @@ async def fetch_all_rss_feeds():
         return valid_items
 
 async def send_to_slack(brief: SalesforceBrief, link: str):
-    # Slack headers have a strict 150-character limit. We slice it to ensure the webhook never fails.
+    # 1. Safely handle potential None values to prevent Block Kit crashes
     safe_headline = brief.headline[:150] if brief.headline else "Salesforce Intelligence Update"
+    tech_details = brief.technical_platform_details if brief.technical_platform_details else "Not specified."
+    market_impact = brief.career_market_salary_impact if brief.career_market_salary_impact else "Not specified."
 
     block_kit_payload = {
+        "text": f"New Update: {safe_headline}", # Critical: Slack requires this fallback text for mobile notifications
         "blocks": [
             {
                 "type": "header",
                 "text": {
                     "type": "plain_text",
-                    "text": safe_headline
+                    "text": safe_headline,
+                    "emoji": False
                 }
             },
             {
@@ -277,11 +281,11 @@ async def send_to_slack(brief: SalesforceBrief, link: str):
                 "fields": [
                     {
                         "type": "mrkdwn",
-                        "text": f"*Technical & Platform Details*\n{brief.technical_platform_details}"
+                        "text": f"*Technical & Platform Details*\n{tech_details}"
                     },
                     {
                         "type": "mrkdwn",
-                        "text": f"*Career & Market Impact*\n{brief.career_market_salary_impact}"
+                        "text": f"*Career & Market Impact*\n{market_impact}"
                     }
                 ]
             },
@@ -292,7 +296,8 @@ async def send_to_slack(brief: SalesforceBrief, link: str):
                         "type": "button",
                         "text": {
                             "type": "plain_text",
-                            "text": "Read Full Article"
+                            "text": "Read Full Article",
+                            "emoji": False
                         },
                         "url": link,
                         "style": "primary"
@@ -303,7 +308,8 @@ async def send_to_slack(brief: SalesforceBrief, link: str):
                             {
                                 "text": {
                                     "type": "plain_text",
-                                    "text": "Mark as Read"
+                                    "text": "Mark as Read",
+                                    "emoji": False
                                 },
                                 "value": "is_read"
                             }
@@ -315,8 +321,14 @@ async def send_to_slack(brief: SalesforceBrief, link: str):
         ]
     }
 
+    # 2. Capture and log the actual response from Slack to prevent silent failures
     async with aiohttp.ClientSession() as session:
-        await session.post(SLACK_WEBHOOK_URL, json=block_kit_payload)
+        async with session.post(SLACK_WEBHOOK_URL, json=block_kit_payload) as resp:
+            if resp.status != 200:
+                error_text = await resp.text()
+                print(f"-> Slack Webhook Blocked: {resp.status} - {error_text}")
+            else:
+                print(f"-> Successfully Pushed Block Kit to Slack: {safe_headline[:40]}")
 
 # ==========================================
 # MAIN EXECUTION (WITH CONNECTION POOLING)
