@@ -69,8 +69,8 @@ class SalesforceBrief(BaseModel):
     )
     headline: Optional[str] = Field(None, description="Clear, professional headline summarizing what actually happened.")
     event_announcement: Optional[str] = Field(None, description="2 concise sentences detailing the core factual event.")
-    technical_platform_details: Optional[str] = Field(None, description="Prerequisites, org types, license requirements, or architectural impacts. Write N/A if none.")
-    career_market_salary_impact: Optional[str] = Field(None, description="Direct analysis of how this impacts compensation, architect skill demand, or hiring trends.")
+    system_architecture_impact: Optional[str] = Field(None, description="Technical impact explained in a clear, beginner-friendly format. Explain what systems change and *why* it matters, avoiding overly advanced jargon so the reader can learn.")
+    enterprise_advisory_strategy: Optional[str] = Field(None, description="Consulting perspective detailing strategic takeaways for corporate clients, potential new billable use cases, or demo opportunities.")
 
 # ==========================================
 # SUPABASE POSTGRES DB LAYER (WITH POOLING)
@@ -252,76 +252,93 @@ async def fetch_all_rss_feeds():
 async def send_to_slack(brief: SalesforceBrief, link: str):
     # 1. Safely handle potential None values to prevent Block Kit crashes
     safe_headline = brief.headline[:150] if brief.headline else "Salesforce Intelligence Update"
-    tech_details = brief.technical_platform_details if brief.technical_platform_details else "Not specified."
-    market_impact = brief.career_market_salary_impact if brief.career_market_salary_impact else "Not specified."
+    tech_impact = brief.system_architecture_impact if brief.system_architecture_impact else "Not specified."
+    advisory_strategy = brief.enterprise_advisory_strategy if brief.enterprise_advisory_strategy else "Not specified."
 
+    # 2. Use Attachments to get the colored side border for visual separation
     block_kit_payload = {
-        "text": f"New Update: {safe_headline}", # Critical: Slack requires this fallback text for mobile notifications
-        "blocks": [
+        "text": f"New Update: {safe_headline}", # Critical fallback text
+        "attachments": [
             {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": safe_headline,
-                    "emoji": False
-                }
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"*Event / Announcement*\n{brief.event_announcement}"
-                }
-            },
-            {
-                "type": "divider"
-            },
-            {
-                "type": "section",
-                "fields": [
+                "color": "#00A1E0", # Salesforce Blue Border
+                "blocks": [
                     {
-                        "type": "mrkdwn",
-                        "text": f"*Technical & Platform Details*\n{tech_details}"
+                        "type": "context",
+                        "elements": [
+                            {
+                                "type": "plain_text",
+                                "text": "Enterprise Intelligence Gateway",
+                                "emoji": False
+                            }
+                        ]
                     },
                     {
-                        "type": "mrkdwn",
-                        "text": f"*Career & Market Impact*\n{market_impact}"
-                    }
-                ]
-            },
-            {
-                "type": "actions",
-                "elements": [
-                    {
-                        "type": "button",
+                        "type": "header",
                         "text": {
                             "type": "plain_text",
-                            "text": "Read Full Article",
+                            "text": safe_headline,
                             "emoji": False
-                        },
-                        "url": link,
-                        "style": "primary"
+                        }
                     },
                     {
-                        "type": "checkboxes",
-                        "options": [
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"*Event / Announcement*\n{brief.event_announcement}"
+                        }
+                    },
+                    {
+                        "type": "divider"
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"*System & Architecture Impact*\n{tech_impact}"
+                        }
+                    },
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": f"*Enterprise Advisory Strategy*\n{advisory_strategy}"
+                        }
+                    },
+                    {
+                        "type": "actions",
+                        "elements": [
                             {
+                                "type": "button",
                                 "text": {
                                     "type": "plain_text",
-                                    "text": "Mark as Read",
+                                    "text": "Read Full Article",
                                     "emoji": False
                                 },
-                                "value": "is_read"
+                                "url": link,
+                                "style": "primary"
+                            },
+                            {
+                                "type": "checkboxes",
+                                "options": [
+                                    {
+                                        "text": {
+                                            "type": "plain_text",
+                                            "text": "Mark as Read",
+                                            "emoji": False
+                                        },
+                                        "value": "is_read"
+                                    }
+                                ],
+                                "action_id": "mark_read_action"
                             }
-                        ],
-                        "action_id": "mark_read_action"
+                        ]
                     }
                 ]
             }
         ]
     }
 
-    # 2. Capture and log the actual response from Slack to prevent silent failures
+    # 3. Capture and log the actual response from Slack to prevent silent failures
     async with aiohttp.ClientSession() as session:
         async with session.post(SLACK_WEBHOOK_URL, json=block_kit_payload) as resp:
             if resp.status != 200:
