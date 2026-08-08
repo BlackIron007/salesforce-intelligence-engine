@@ -1,9 +1,7 @@
 name: Enterprise Intelligence Pipeline
 
 on:
-  schedule:
-    - cron: '*/15 * * * *' # Executes every 15 minutes
-  workflow_dispatch: # Allows you to manually trigger a run via the GitHub UI
+  workflow_dispatch: # Solely relies on external API triggers (cron-job.org) or manual UI clicks
 
 jobs:
   run-pipeline:
