@@ -250,12 +250,73 @@ async def fetch_all_rss_feeds():
         return valid_items
 
 async def send_to_slack(brief: SalesforceBrief, link: str):
-    message = f"*EVENT / ANNOUNCEMENT:*\n*{brief.headline}*\n{brief.event_announcement}\n\n" \
-              f"*TECHNICAL & PLATFORM DETAILS:*\n{brief.technical_platform_details}\n\n" \
-              f"*CAREER, MARKET & SALARY IMPACT:*\n{brief.career_market_salary_impact}\n\n" \
-              f"*Source Link:* {link}\n---"
+    # Slack headers have a strict 150-character limit. We slice it to ensure the webhook never fails.
+    safe_headline = brief.headline[:150] if brief.headline else "Salesforce Intelligence Update"
+
+    block_kit_payload = {
+        "blocks": [
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": safe_headline
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Event / Announcement*\n{brief.event_announcement}"
+                }
+            },
+            {
+                "type": "divider"
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*Technical & Platform Details*\n{brief.technical_platform_details}"
+                    },
+                    {
+                        "type": "mrkdwn",
+                        "text": f"*Career & Market Impact*\n{brief.career_market_salary_impact}"
+                    }
+                ]
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Read Full Article"
+                        },
+                        "url": link,
+                        "style": "primary"
+                    },
+                    {
+                        "type": "checkboxes",
+                        "options": [
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Mark as Read"
+                                },
+                                "value": "is_read"
+                            }
+                        ],
+                        "action_id": "mark_read_action"
+                    }
+                ]
+            }
+        ]
+    }
+
     async with aiohttp.ClientSession() as session:
-        await session.post(SLACK_WEBHOOK_URL, json={"text": message})
+        await session.post(SLACK_WEBHOOK_URL, json=block_kit_payload)
 
 # ==========================================
 # MAIN EXECUTION (WITH CONNECTION POOLING)
