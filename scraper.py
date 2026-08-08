@@ -255,85 +255,80 @@ async def send_to_slack(brief: SalesforceBrief, link: str):
     tech_impact = brief.system_architecture_impact if brief.system_architecture_impact else "Not specified."
     advisory_strategy = brief.enterprise_advisory_strategy if brief.enterprise_advisory_strategy else "Not specified."
 
-    # 2. Use Attachments to get the colored side border for visual separation
+    # 2. Pure Block Kit Payload (No Attachments)
     block_kit_payload = {
-        "text": f"New Update: {safe_headline}", # Critical fallback text
-        "attachments": [
+        "text": f"New Update: {safe_headline}", # Now invisible in chat, ONLY used for mobile push notifications
+        "blocks": [
             {
-                "color": "#00A1E0", # Salesforce Blue Border
-                "blocks": [
+                "type": "context",
+                "elements": [
                     {
-                        "type": "context",
-                        "elements": [
-                            {
-                                "type": "plain_text",
-                                "text": "Enterprise Intelligence Gateway",
-                                "emoji": False
-                            }
-                        ]
-                    },
-                    {
-                        "type": "header",
-                        "text": {
-                            "type": "plain_text",
-                            "text": safe_headline,
-                            "emoji": False
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"*Event / Announcement*\n{brief.event_announcement}"
-                        }
-                    },
-                    {
-                        "type": "divider"
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"*System & Architecture Impact*\n{tech_impact}"
-                        }
-                    },
-                    {
-                        "type": "section",
-                        "text": {
-                            "type": "mrkdwn",
-                            "text": f"*Enterprise Advisory Strategy*\n{advisory_strategy}"
-                        }
-                    },
-                    {
-                        "type": "actions",
-                        "elements": [
-                            {
-                                "type": "button",
-                                "text": {
-                                    "type": "plain_text",
-                                    "text": "Read Full Article",
-                                    "emoji": False
-                                },
-                                "url": link,
-                                "style": "primary"
-                            },
-                            {
-                                "type": "checkboxes",
-                                "options": [
-                                    {
-                                        "text": {
-                                            "type": "plain_text",
-                                            "text": "Mark as Read",
-                                            "emoji": False
-                                        },
-                                        "value": "is_read"
-                                    }
-                                ],
-                                "action_id": "mark_read_action"
-                            }
-                        ]
+                        "type": "plain_text",
+                        "text": "Enterprise Intelligence Gateway",
+                        "emoji": False
                     }
                 ]
+            },
+            {
+                "type": "header",
+                "text": {
+                    "type": "plain_text",
+                    "text": safe_headline,
+                    "emoji": False
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Event / Announcement*\n{brief.event_announcement}"
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*System & Architecture Impact*\n{tech_impact}"
+                }
+            },
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*Enterprise Advisory Strategy*\n{advisory_strategy}"
+                }
+            },
+            {
+                "type": "actions",
+                "elements": [
+                    {
+                        "type": "button",
+                        "text": {
+                            "type": "plain_text",
+                            "text": "Read Full Article",
+                            "emoji": False
+                        },
+                        "url": link,
+                        "style": "primary"
+                    },
+                    {
+                        "type": "checkboxes",
+                        "options": [
+                            {
+                                "text": {
+                                    "type": "plain_text",
+                                    "text": "Mark as Read",
+                                    "emoji": False
+                                },
+                                "value": "is_read"
+                            }
+                        ],
+                        "action_id": "mark_read_action"
+                    }
+                ]
+            },
+            {
+                "type": "divider" # Physical separator at the bottom of the card!
             }
         ]
     }
